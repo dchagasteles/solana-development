@@ -33,33 +33,33 @@ pub mod escrow {
         initializer_amount: u64,
         taker_amount: u64,
     ) -> ProgramResult {
+        // input accounts are assigned to EscrowAccount fileds one by one
         ctx.accounts.escrow_account.initializer_key = *ctx.accounts.initializer.key;
-        ctx.accounts
-            .escrow_account
-            .initializer_deposit_token_account = *ctx
-            .accounts
-            .initializer_deposit_token_account
-            .to_account_info()
-            .key;
-        ctx.accounts
-            .escrow_account
-            .initializer_receive_token_account = *ctx
-            .accounts
-            .initializer_receive_token_account
-            .to_account_info()
-            .key;
+        ctx.accounts.escrow_account.initializer_deposit_token_account = 
+            *ctx.accounts
+                .initializer_deposit_token_account
+                .to_account_info()
+                .key;
+        ctx.accounts.escrow_account.initializer_receive_token_account =
+            *ctx.accounts
+                .initializer_receive_token_account
+                .to_account_info()
+                .key;
         ctx.accounts.escrow_account.initializer_amount = initializer_amount;
         ctx.accounts.escrow_account.taker_amount = taker_amount;
 
+        // new PDA (vault_authority)
         let (vault_authority, _vault_authority_bump) =
             Pubkey::find_program_address(&[ESCROW_PDA_SEED], ctx.program_id);
 
+        // set initializer's authority to the above PDA
         token::set_authority(
             ctx.accounts.into_set_authority_context(),
             AuthorityType::AccountOwner,
             Some(vault_authority),
         )?;
 
+        // transfer initializer_amount tokens to PDA(vault_account)
         token::transfer(
             ctx.accounts.into_transfer_to_pda_context(),
             ctx.accounts.escrow_account.initializer_amount,
@@ -69,47 +69,52 @@ pub mod escrow {
     }
 
     pub fn cancel_escrow(ctx: Context<CancelEscrow>) -> ProgramResult {
+        // PDA for vault_authority
         let (_vault_authority, vault_authority_bump) =
             Pubkey::find_program_address(&[ESCROW_PDA_SEED], ctx.program_id);
         let authority_seeds = &[&ESCROW_PDA_SEED[..], &[vault_authority_bump]];
 
+        // transfer x tokens from vault_account to initializer_deposit_token_account
         token::transfer(
-            ctx.accounts
-                .into_transfer_to_initializer_context()
+        ctx.accounts                                              // &mut CancelEscrow
+                .into_transfer_to_initializer_context()             // CpiContext<Transfer>
                 .with_signer(&[&authority_seeds[..]]),
             ctx.accounts.escrow_account.initializer_amount,
         )?;
 
+        // close PDA(vault_account)
         token::close_account(
-            ctx.accounts
-                .into_close_context()
-                .with_signer(&[&authority_seeds[..]]),
+        ctx.accounts                                              // &mut CancelEscrow
+                .into_close_context()                           // Cpitext(CloseAccount)
+                .with_signer(&[&authority_seeds[..]]),                    // signer_seeds
         )?;
 
         Ok(())
     }
 
     pub fn exchange(ctx: Context<Exchange>) -> ProgramResult {
-        // Transferring from initializer to taker
         let (_vault_authority, vault_authority_bump) =
             Pubkey::find_program_address(&[ESCROW_PDA_SEED], ctx.program_id);
         let authority_seeds = &[&ESCROW_PDA_SEED[..], &[vault_authority_bump]];
 
+        // transfer y tokens from taker_deposit_token_account to initializer_deposit_token_account
         token::transfer(
             ctx.accounts.into_transfer_to_initializer_context(),
             ctx.accounts.escrow_account.taker_amount,
         )?;
 
+        // transfer x tokens from vault_account to taker_receive_token_account
         token::transfer(
-            ctx.accounts
-                .into_transfer_to_taker_context()
-                .with_signer(&[&authority_seeds[..]]),
+        ctx.accounts                                // &mut Exchange
+                .into_transfer_to_taker_context()     // CpiContext<Transfer>
+                .with_signer(&[&authority_seeds[..]]),       // signer_seeds
             ctx.accounts.escrow_account.initializer_amount,
         )?;
 
+        // close vault_account
         token::close_account(
-            ctx.accounts
-                .into_close_context()
+        ctx.accounts                                   // &mut Exchange
+                .into_close_context()             // CpiContext<CloseAccount>
                 .with_signer(&[&authority_seeds[..]]),
         )?;
 
@@ -117,6 +122,12 @@ pub mod escrow {
     }
 }
 
+/**
+ * ProgramAccount: Boxed container for a deserialized `account`
+ *                 being used to reference account owned by the currently executing Program
+ * AccountInfo:    key, is_signer, is_writable, lamports, data, owner, exectable, rent_epoch
+ * Account:        Account continaer that checks ownership and deserialization
+ */
 #[derive(Accounts)]
 #[instruction(vault_account_bump: u8, initializer_amount: u64)]
 pub struct InitializeEscrow<'info> {
@@ -164,11 +175,12 @@ pub struct CancelEscrow<'info> {
     pub token_program: AccountInfo<'info>,
 }
 
+// derive in Rust: allows new item to be automatically generated for data structures
 #[derive(Accounts)]
 pub struct Exchange<'info> {
-    #[account(signer)]
+    #[account(signer)]  // check if given account signed the Tx
     pub taker: AccountInfo<'info>,
-    #[account(mut)]
+    #[account(mut)]     // mark the account as mutable and persists the state transition
     pub taker_deposit_token_account: Account<'info, TokenAccount>,
     #[account(mut)]
     pub taker_receive_token_account: Account<'info, TokenAccount>,
@@ -184,7 +196,7 @@ pub struct Exchange<'info> {
         constraint = escrow_account.initializer_deposit_token_account == *initializer_deposit_token_account.to_account_info().key,
         constraint = escrow_account.initializer_receive_token_account == *initializer_receive_token_account.to_account_info().key,
         constraint = escrow_account.initializer_key == *initializer.key,
-        close = initializer
+        close = initializer // mark the account as beingn closed at the end of Ix's execution, sending rent exemption lamports to the initializer
     )]
     pub escrow_account: ProgramAccount<'info, EscrowAccount>,
     #[account(mut)]
@@ -203,6 +215,7 @@ pub struct EscrowAccount {
 }
 
 impl<'info> InitializeEscrow<'info> {
+    // transfer x tokens from initializer_deposit_token_account to vault_account
     fn into_transfer_to_pda_context(&self) -> CpiContext<'_, '_, '_, 'info, Transfer<'info>> {
         let cpi_accounts = Transfer {
             from: self
@@ -215,6 +228,7 @@ impl<'info> InitializeEscrow<'info> {
         CpiContext::new(self.token_program.clone(), cpi_accounts)
     }
 
+    // set initializer's authority to vault_account 
     fn into_set_authority_context(&self) -> CpiContext<'_, '_, '_, 'info, SetAuthority<'info>> {
         let cpi_accounts = SetAuthority {
             account_or_mint: self.vault_account.to_account_info().clone(),
@@ -226,6 +240,7 @@ impl<'info> InitializeEscrow<'info> {
 }
 
 impl<'info> CancelEscrow<'info> {
+    // generate CPI context for Transfer
     fn into_transfer_to_initializer_context(
         &self,
     ) -> CpiContext<'_, '_, '_, 'info, Transfer<'info>> {
