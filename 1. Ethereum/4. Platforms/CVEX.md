@@ -1,5 +1,3 @@
-# CVEX
-
 Decentralized Derivatives Exchange offering approach to futures & option trading
 
 - collateral management

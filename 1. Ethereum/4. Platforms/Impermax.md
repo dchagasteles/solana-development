@@ -13,7 +13,6 @@ in this way, yield farmers can multiply their yield farming upto 50X.
 
 lending market - isolated -
 
-=========================================================================================================
 
 1. LP token leveraging.
 
