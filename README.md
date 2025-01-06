@@ -1,13 +1,40 @@
-# Introduction
+# Solana program - basic
 
-In this repository, you'll learn how to develop blockchain applications on Ethereum, Solana, and Comos chains.
+This is a Rust & Solana tutorial repo.
+You can learn solanan smart contract development using Rust by following the below steps.
+Before starting tutorial repo, please check their README.md files first.
 
-# Table of Contents
+## Step1: Learn Rust programming.
 
-# [Ethereum](/1.%20Ethereum/)
+- You will learn Rust programming in [here](/rust)
+- Each day has at least 3 Rust code tutorials.
+- You can check your understanding with fixing/completing test.rs file.
 
-Ethereum is a decentralized, open-source blockchain that supports smart contracts. Ethereum's flexibility and widespread adoption make it the ideal choice for building a wide range of decentralized applications (dApps).
+## Step2: Hello World Solana Smart Contract Development.
 
-# [Solana](/2.%20Solana/)
+- You will build solana smart contracts & dApps by following this [tutorial](https://solhack.com/courses/building-solana-smart-contracts-dapps-with-james-bachini/)
+- The final source code is [here](/solana/helloWorld)
 
-Solana is a high-performance blockchain known for its fast transaction processing speeds and low fees. It is quickly gaining popularity for decentralized finance (DeFi) applications and non-fungible tokens (NFTs). Solana uses the programming language Rust for writing its smart contracts, known as programs.
+## Step3: Escrow Solana Smart Contract Development.
+
+- You will build a bit complex solana smart contract program here by following this [tutorial](https://paulx.dev/blog/2021/01/14/programming-on-solana-an-introduction/)
+- The final source code is [here](/solana/escrow)
+- Before leaving this tutorial, plese check if you understand [these](/escrow/program/doc.md) fully.
+
+## Step4: Anchor Escrow Program
+
+- Using Anchor framework, We're building Escrow Programing again here. But we modified [escrow](https://paulx.dev/blog/2021/01/14/programming-on-solana-an-introduction/) program a bid differently here. You can check details [here](/anchor/anchor-escrow-master/README.md).
+
+# Other resources
+
+https://solana.com/developers/courses (63 courses)
+
+https://www.rareskills.io/solana-tutorial (60 days)
+
+https://github.com/rust-in-blockchain/rust-in-blockchain/blob/master/content/learning.md (study Rust)
+
+https://github.com/ddimaria/rust-blockchain-tutorial (rust block)
+
+https://turbin3.com/
+
+https://doc.rust-lang.org/book/
