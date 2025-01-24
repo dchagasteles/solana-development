@@ -22,7 +22,7 @@ You can learn solanan smart contract development using Rust by following the bel
 
 - You will build a bit complex solana smart contract program here by following this [tutorial](https://paulx.dev/blog/2021/01/14/programming-on-solana-an-introduction/)
 - The final source code is [here](/contracts/escrow)
-- Before leaving this tutorial, plese check if you understand [these](/escrow/program/doc.md) fully.
+- Before leaving this tutorial, plese check if you understand [these](/contracts/escrow/program/doc.md) fully.
 
 ## Step4: Anchor Escrow Program
 
